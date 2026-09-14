@@ -1,75 +1,600 @@
-<?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:gravity="center"
-    android:padding="24dp"
-    android:background="#0f0f23">
+    android:background="@drawable/bg_gradient"
+    android:fillViewport="true">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="MIC NUKE"
-        android:textSize="52sp"
-        android:textStyle="bold"
-        android:textColor="#ff0040"
-        android:layout_marginBottom="8dp"/>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="HOLY MOLY MODE"
-        android:textSize="16sp"
-        android:textColor="#ff4080"
-        android:layout_marginBottom="40dp"/>
-
-    <TextView
-        android:id="@+id/gainText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Gain: 8.0x"
-        android:textSize="28sp"
-        android:textColor="#ffffff"
-        android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
-
-    <SeekBar
-        android:id="@+id/gainSlider"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:progressTint="#ff0040"
-        android:thumbTint="#ff0040"
-        android:layout_marginBottom="50dp"/>
+        android:orientation="vertical"
+        android:padding="16dp">
 
-    <Button
-        android:id="@+id/toggleButton"
-        android:layout_width="180dp"
-        android:layout_height="70dp"
-        android:text="START"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:backgroundTint="#ff0040"
-        android:textColor="#ffffff"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="MIC NUKE"
+            android:textSize="52sp"
+            android:textStyle="bold"
+            android:textColor="@color/neon_pink"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="4dp"
+            android:shadowColor="#ff006e"
+            android:shadowRadius="12dp" />
 
-    <TextView
-        android:id="@+id/statusText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Ready"
-        android:textSize="20sp"
-        android:textColor="#ffffff"
-        android:layout_marginTop="32dp"
-        android:textStyle="bold"/>
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/subtitle"
+            android:textSize="15sp"
+            android:textColor="@color/neon_cyan"
+            android:gravity="center"
+            android:letterSpacing="0.15"
+            android:layout_marginBottom="20dp" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Plug in handsfree → Start → Open WePlay"
-        android:textSize="14sp"
-        android:textColor="#666666"
-        android:layout_marginTop="60dp"
-        android:gravity="center"/>
+        <!-- LEVEL METER CARD -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
 
-</LinearLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sec_level"
+                android:textColor="@color/section_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="10dp" />
+
+            <ProgressBar
+                android:id="@+id/vuMeter"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="18dp"
+                android:progress="0"
+                android:max="100"
+                android:progressDrawable="@drawable/vu_fill"
+                android:background="@drawable/vu_bg" />
+
+            <TextView
+                android:id="@+id/vuText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="-inf dB"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp"
+                android:layout_marginTop="8dp" />
+
+            <TextView
+                android:id="@+id/statusText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/status_ready"
+                android:textColor="@color/text_white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginTop="8dp" />
+        </LinearLayout>
+
+
+        <!-- MASTER CARD -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sec_master"
+                android:textColor="@color/section_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:id="@+id/gainText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gain: 8.0x"
+                android:textColor="@color/neon_yellow"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <SeekBar
+                android:id="@+id/gainSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="490"
+                android:progress="70"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb"
+                android:layout_marginBottom="14dp" />
+
+            <TextView
+                android:id="@+id/loudnessText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Loudness: +30 dB"
+                android:textColor="@color/neon_yellow"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <SeekBar
+                android:id="@+id/loudnessSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="6000"
+                android:progress="3000"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb" />
+        </LinearLayout>
+
+
+        <!-- VOICE EFFECTS CARD -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sec_voice"
+                android:textColor="@color/section_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Distortion"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/distortionSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/distortionText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Amount: 0%"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+            <SeekBar
+                android:id="@+id/distortionSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb"
+                android:layout_marginBottom="14dp" />
+
+            <TextView
+                android:id="@+id/pitchText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Pitch (semitones)"
+                android:textColor="@color/text_white"
+                android:textSize="16sp" />
+            <TextView
+                android:id="@+id/pitchValText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+            <SeekBar
+                android:id="@+id/pitchSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="240"
+                android:progress="120"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb"
+                android:layout_marginBottom="14dp" />
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Ring Mod"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/ringModSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/ringModText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Freq: 100 Hz"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+            <SeekBar
+                android:id="@+id/ringModSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="900"
+                android:progress="99"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb"
+                android:layout_marginBottom="14dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Bitcrusher"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/bitcrusherSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/bitcrushText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Depth: 16 bit"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+            <SeekBar
+                android:id="@+id/bitcrushSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="12"
+                android:progress="12"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb" />
+        </LinearLayout>
+
+
+        <!-- SPACE EFFECTS CARD -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sec_space"
+                android:textColor="@color/section_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Echo"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/echoSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/echoDelayText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Delay: 300 ms"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+            <SeekBar
+                android:id="@+id/echoDelaySlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="700"
+                android:progress="300"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb" />
+            <TextView
+                android:id="@+id/echoFeedbackText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Feedback: 40%"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+            <SeekBar
+                android:id="@+id/echoFeedbackSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="90"
+                android:progress="40"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb"
+                android:layout_marginBottom="14dp" />
+
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Flanger"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/flangerSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/flangerRateText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Rate: 2.0 Hz"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+            <SeekBar
+                android:id="@+id/flangerRateSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="20"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb"
+                android:layout_marginBottom="14dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Reverb"
+                android:textColor="@color/text_white"
+                android:textSize="16sp" />
+            <Spinner
+                android:id="@+id/reverbSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+
+        <!-- DYNAMICS CARD -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sec_dynamics"
+                android:textColor="@color/section_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Bass Boost"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/bassBoostSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/bassBoostText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Strength: 50%"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+            <SeekBar
+                android:id="@+id/bassBoostSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="1000"
+                android:progress="500"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Compressor"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/compressorSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Noise Gate"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/noiseGateSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+        </LinearLayout>
+
+
+        <!-- PRESETS CARD -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="18dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/sec_presets"
+                android:textColor="@color/section_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <Button
+                    android:id="@+id/presetNuke"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="NUKE"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+                <Button
+                    android:id="@+id/presetRobot"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="ROBOT"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+                <Button
+                    android:id="@+id/presetDemon"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="DEMON"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+                <Button
+                    android:id="@+id/presetChipmunk"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="CHIP"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+                <Button
+                    android:id="@+id/presetDeep"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="DEEP"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+                <Button
+                    android:id="@+id/presetHelicopter"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="HELI"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+            </LinearLayout>
+        </LinearLayout>
+
+
+        <!-- START/STOP -->
+        <Button
+            android:id="@+id/toggleButton"
+            android:layout_width="match_parent"
+            android:layout_height="76dp"
+            android:text="@string/btn_start"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_white"
+            android:background="@drawable/btn_start"
+            android:layout_marginBottom="24dp" />
+
+    </LinearLayout>
+</ScrollView>
+
