@@ -154,6 +154,25 @@
                 android:max="6000"
                 android:progress="3000"
                 android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb"
+                android:layout_marginBottom="14dp" />
+
+            <TextView
+                android:id="@+id/turboText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔥 TURBO: 100%"
+                android:textColor="@color/neon_yellow"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <SeekBar
+                android:id="@+id/turboSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="100"
+                android:progressDrawable="@drawable/slider_track"
                 android:thumb="@drawable/slider_thumb" />
         </LinearLayout>
 
@@ -498,6 +517,42 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
+                    android:text="Presence EQ (3.2kHz)"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/presenceSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Exciter (Harmonics)"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/exciterSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:text="Noise Gate"
                     android:textColor="@color/text_white"
                     android:textSize="16sp" />
@@ -695,6 +750,22 @@
                     android:text="STADIUM"
                     android:textSize="13sp"
                     android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+                <Button
+                    android:id="@+id/presetGod"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="👁 GOD MODE — MAXIMUM LOUDNESS"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/neon_yellow"
                     android:background="@drawable/btn_preset" />
             </LinearLayout>
         </LinearLayout>
