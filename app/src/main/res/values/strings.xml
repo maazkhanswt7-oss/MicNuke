@@ -11,4 +11,5 @@
     <string name="sec_dynamics">💥 DYNAMICS</string>
     <string name="sec_presets">🎭 PRESETS</string>
     <string name="sec_level">📊 LEVEL METER</string>
+    <string name="voiceroom_tip">💡 VOICE ROOM TIP: Tap START, then set the voice app to SPEAKER mode — the mic picks up your boosted voice from the speaker. Keep volume near max and use earbuds-free setup to avoid echo loops.</string>
 </resources>
