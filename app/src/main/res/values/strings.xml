@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">MicNuke</string>
+    <string name="subtitle">ULTIMATE VOICE BOOSTER</string>
+    <string name="status_ready">Ready</string>
+    <string name="status_active">🔥 NUKE ACTIVE 🔥</string>
+    <string name="btn_start">START</string>
+    <string name="btn_stop">STOP</string>
+    <string name="sec_master">⚡ MASTER</string>
+    <string name="sec_voice">🎤 VOICE EFFECTS</string>
+    <string name="sec_space">🌌 SPACE EFFECTS</string>
+    <string name="sec_dynamics">💥 DYNAMICS</string>
+    <string name="sec_presets">🎭 PRESETS</string>
+    <string name="sec_level">📊 LEVEL METER</string>
 </resources>
