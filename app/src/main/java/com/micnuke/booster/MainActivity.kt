@@ -49,6 +49,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var bassBoostSlider: SeekBar
     private lateinit var compressorSwitch: Switch
     private lateinit var noiseGateSwitch: Switch
+    private lateinit var hpfSwitch: Switch
+    private lateinit var agcSwitch: Switch
+    private lateinit var limiterSwitch: Switch
     private lateinit var toggleButton: Button
 
     // ----- Audio state -----
@@ -76,6 +79,9 @@ class MainActivity : AppCompatActivity() {
     @Volatile private var bassBoostStrength = 500
     @Volatile private var compressorOn = false
     @Volatile private var noiseGateOn = false
+    @Volatile private var hpfOn = false
+    @Volatile private var agcOn = false
+    @Volatile private var limiterOn = false
     @Volatile private var eqBandLevels = floatArrayOf(0f, 0f, 0f, 0f, 0f)
 
     private val reverbNames = arrayOf(
@@ -121,6 +127,9 @@ class MainActivity : AppCompatActivity() {
         bassBoostSlider = findViewById(R.id.bassBoostSlider)
         compressorSwitch = findViewById(R.id.compressorSwitch)
         noiseGateSwitch = findViewById(R.id.noiseGateSwitch)
+        hpfSwitch = findViewById(R.id.hpfSwitch)
+        agcSwitch = findViewById(R.id.agcSwitch)
+        limiterSwitch = findViewById(R.id.limiterSwitch)
         toggleButton = findViewById(R.id.toggleButton)
 
         setupUi()
@@ -262,6 +271,9 @@ class MainActivity : AppCompatActivity() {
 
         compressorSwitch.setOnCheckedChangeListener { _, isChecked -> compressorOn = isChecked }
         noiseGateSwitch.setOnCheckedChangeListener { _, isChecked -> noiseGateOn = isChecked }
+        hpfSwitch.setOnCheckedChangeListener { _, isChecked -> hpfOn = isChecked }
+        agcSwitch.setOnCheckedChangeListener { _, isChecked -> agcOn = isChecked }
+        limiterSwitch.setOnCheckedChangeListener { _, isChecked -> limiterOn = isChecked }
 
         toggleButton.setOnClickListener {
             if (isRunning) stopMic() else startMic()
@@ -274,6 +286,10 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.presetChipmunk).setOnClickListener { applyPreset(3) }
         findViewById<Button>(R.id.presetDeep).setOnClickListener { applyPreset(4) }
         findViewById<Button>(R.id.presetHelicopter).setOnClickListener { applyPreset(5) }
+        findViewById<Button>(R.id.presetVoiceRoom).setOnClickListener { applyPreset(6) }
+        findViewById<Button>(R.id.presetMegaphone).setOnClickListener { applyPreset(7) }
+        findViewById<Button>(R.id.presetBroadcast).setOnClickListener { applyPreset(8) }
+        findViewById<Button>(R.id.presetStadium).setOnClickListener { applyPreset(9) }
     }
 
 
@@ -460,8 +476,14 @@ class MainActivity : AppCompatActivity() {
                                outBuf: ShortArray, count: Int) {
         for (i in 0 until count) floatBuf[i] = inBuf[i].toFloat() / 32768f
 
+        // 0. high-pass filter (cut rumble, free up headroom)
+        if (hpfOn) applyHpf(floatBuf, count)
+
         // 1. gain
         if (gain != 1f) applyGain(floatBuf, count)
+
+        // 1.5 compressor (even out dynamics)
+        if (compressorOn) applyCompressor(floatBuf, count)
 
         // 2. distortion
         if (distortionOn) applyDistortion(floatBuf, count)
@@ -480,6 +502,12 @@ class MainActivity : AppCompatActivity() {
 
         // 7. echo
         if (echoOn) applyEcho(floatBuf, count)
+
+        // 8. AGC (auto push voice to target level)
+        if (agcOn) applyAgc(floatBuf, count)
+
+        // 9. limiter (max loudness, no clipping)
+        if (limiterOn) applyLimiter(floatBuf, count)
 
         for (i in 0 until count) {
             val v = floatBuf[i] * 32767f
@@ -561,6 +589,65 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
+    // ================= DYNAMICS DSP =================
+    private var hpfX1 = 0f
+    private var hpfX2 = 0f
+    private var hpfY1 = 0f
+    private var hpfY2 = 0f
+    private var compEnv = 0f
+    private var agcEnv = 0f
+    private var limEnv = 0f
+
+    private fun applyHpf(buf: FloatArray, count: Int) {
+        // 2nd-order butterworth high-pass @ 100 Hz
+        val w0 = TWO_PI * 100f / 48000f
+        val cosw = cos(w0); val sinw = sin(w0)
+        val alpha = sinw / 1.4142f
+        val b0 = (1f + cosw) / 2f; val b1 = -(1f + cosw); val b2 = b0
+        val a0 = 1f + alpha; val a1 = -2f * cosw; val a2 = 1f - alpha
+        val ib0 = b0 / a0; val ib1 = b1 / a0; val ib2 = b2 / a0
+        val ia1 = a1 / a0; val ia2 = a2 / a0
+        for (i in 0 until count) {
+            val x = buf[i]
+            val y = ib0 * x + ib1 * hpfX1 + ib2 * hpfX2 - ia1 * hpfY1 - ia2 * hpfY2
+            hpfX2 = hpfX1; hpfX1 = x; hpfY2 = hpfY1; hpfY1 = y
+            buf[i] = y
+        }
+    }
+
+    private fun applyCompressor(buf: FloatArray, count: Int) {
+        val threshold = 0.3f; val ratio = 4f; val makeup = 1.9f
+        for (i in 0 until count) {
+            val x = abs(buf[i])
+            compEnv = if (x > compEnv) compEnv + (x - compEnv) * 0.35f else compEnv + (x - compEnv) * 0.03f
+            var g = 1f
+            if (compEnv > threshold) g = (threshold + (compEnv - threshold) / ratio) / compEnv
+            buf[i] *= g * makeup
+        }
+    }
+
+    private fun applyAgc(buf: FloatArray, count: Int) {
+        // slow envelope follower, pushes level toward 0.85 peak
+        for (i in 0 until count) {
+            val x = abs(buf[i])
+            agcEnv = if (x > agcEnv) agcEnv + (x - agcEnv) * 0.02f else agcEnv + (x - agcEnv) * 0.002f
+            var g = 0.85f / (agcEnv + 0.02f)
+            if (g > 25f) g = 25f
+            if (g < 0.5f) g = 0.5f
+            buf[i] *= g
+        }
+    }
+
+    private fun applyLimiter(buf: FloatArray, count: Int) {
+        for (i in 0 until count) {
+            val x = abs(buf[i])
+            limEnv = if (x > limEnv) limEnv + (x - limEnv) * 0.5f else limEnv + (x - limEnv) * 0.2f
+            var g = 0.97f / (limEnv + 0.03f)
+            if (g > 1f) g = 1f
+            buf[i] *= g
+        }
+    }
 
     private var lastVuUpdate = 0L
 
@@ -672,6 +759,66 @@ class MainActivity : AppCompatActivity() {
                 reverbIdx = 0; reverbSpinner.setSelection(0)
                 bassBoostOn = false; bassBoostSwitch.isChecked = false
                 statusText.text = "🚁 HELICOPTER MODE"
+            }
+            6 -> { // VOICE ROOM: loud-as-heck chain
+                gainSlider.progress = 220; loudnessSlider.progress = 6000
+                distortionOn = false; distortionSwitch.isChecked = false
+                pitchSemi = 0f; pitchSlider.progress = 120
+                ringModOn = false; ringModSwitch.isChecked = false
+                bitcrushOn = false; bitcrusherSwitch.isChecked = false
+                echoOn = false; echoSwitch.isChecked = false
+                flangerOn = false; flangerSwitch.isChecked = false
+                reverbIdx = 0; reverbSpinner.setSelection(0)
+                bassBoostOn = false; bassBoostSwitch.isChecked = false
+                hpfOn = true; hpfSwitch.isChecked = true
+                agcOn = true; agcSwitch.isChecked = true
+                limiterOn = true; limiterSwitch.isChecked = true
+                compressorOn = true; compressorSwitch.isChecked = true
+                statusText.text = "📢 VOICE ROOM MODE"
+            }
+            7 -> { // MEGAPHONE
+                gainSlider.progress = 320; loudnessSlider.progress = 6000
+                distortionOn = true; distortionSwitch.isChecked = true; distortionSlider.progress = 25
+                pitchSemi = 0f; pitchSlider.progress = 120
+                ringModOn = false; ringModSwitch.isChecked = false
+                bitcrushOn = false; bitcrusherSwitch.isChecked = false
+                echoOn = false; echoSwitch.isChecked = false
+                flangerOn = false; flangerSwitch.isChecked = false
+                reverbIdx = 0; reverbSpinner.setSelection(0)
+                bassBoostOn = false; bassBoostSwitch.isChecked = false
+                hpfOn = true; hpfSwitch.isChecked = true
+                limiterOn = true; limiterSwitch.isChecked = true
+                statusText.text = "📣 MEGAPHONE MODE"
+            }
+            8 -> { // BROADCAST
+                gainSlider.progress = 250; loudnessSlider.progress = 6000
+                distortionOn = false; distortionSwitch.isChecked = false
+                pitchSemi = 0f; pitchSlider.progress = 120
+                ringModOn = false; ringModSwitch.isChecked = false
+                bitcrushOn = false; bitcrusherSwitch.isChecked = false
+                echoOn = false; echoSwitch.isChecked = false
+                flangerOn = false; flangerSwitch.isChecked = false
+                reverbIdx = 1; reverbSpinner.setSelection(1)
+                bassBoostOn = false; bassBoostSwitch.isChecked = false
+                hpfOn = true; hpfSwitch.isChecked = true
+                agcOn = true; agcSwitch.isChecked = true
+                limiterOn = true; limiterSwitch.isChecked = true
+                compressorOn = true; compressorSwitch.isChecked = true
+                statusText.text = "🎙 BROADCAST MODE"
+            }
+            9 -> { // STADIUM
+                gainSlider.progress = 180; loudnessSlider.progress = 6000
+                distortionOn = false; distortionSwitch.isChecked = false
+                pitchSemi = 0f; pitchSlider.progress = 120
+                ringModOn = false; ringModSwitch.isChecked = false
+                bitcrushOn = false; bitcrusherSwitch.isChecked = false
+                echoOn = true; echoSwitch.isChecked = true; echoDelaySlider.progress = 400; echoFeedbackSlider.progress = 35
+                flangerOn = false; flangerSwitch.isChecked = false
+                reverbIdx = 5; reverbSpinner.setSelection(5)
+                bassBoostOn = false; bassBoostSwitch.isChecked = false
+                hpfOn = true; hpfSwitch.isChecked = true
+                limiterOn = true; limiterSwitch.isChecked = true
+                statusText.text = "🏟 STADIUM MODE"
             }
         }
     }
