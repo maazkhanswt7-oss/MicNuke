@@ -90,6 +90,23 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:background="@drawable/card_bg"
+            android:padding="14dp"
+            android:layout_marginBottom="14dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/voiceroom_tip"
+                android:textColor="@color/neon_yellow"
+                android:textSize="13sp"
+                android:lineSpacingExtra="3dp" />
+        </LinearLayout>
+
+        <!-- MASTER CARD -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
             android:padding="16dp"
             android:layout_marginBottom="14dp">
 
@@ -489,6 +506,60 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" />
             </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="High-Pass Filter (100Hz)"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/hpfSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Auto Gain (AGC)"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/agcSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Loudness Limiter"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/limiterSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
         </LinearLayout>
 
 
@@ -576,6 +647,52 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:text="HELI"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+                <Button
+                    android:id="@+id/presetVoiceRoom"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="VOICE ROOM"
+                    android:textSize="13sp"
+                    android:textColor="@color/neon_yellow"
+                    android:background="@drawable/btn_preset" />
+                <Button
+                    android:id="@+id/presetMegaphone"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="MEGAPHONE"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+                <Button
+                    android:id="@+id/presetBroadcast"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="BROADCAST"
+                    android:textSize="13sp"
+                    android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+                <Button
+                    android:id="@+id/presetStadium"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="STADIUM"
                     android:textSize="13sp"
                     android:textColor="@color/text_white"
                     android:background="@drawable/btn_preset" />
