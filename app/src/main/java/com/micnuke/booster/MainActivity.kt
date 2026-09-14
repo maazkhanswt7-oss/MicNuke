@@ -350,7 +350,7 @@ class MainActivity : AppCompatActivity() {
             val session = player.audioSessionId
 
             // Hardware effects attached to output session
-            try { le = LoudnessEnhancer(session); le.setTargetGain(loudnessMb.toFloat()); le.enabled = true } catch (e: Exception) {}
+            try { le = LoudnessEnhancer(session); le.setTargetGain(loudnessMb); le.enabled = true } catch (e: Exception) {}
             try {
                 bb = BassBoost(0, session)
                 bb.setStrength(if (bassBoostOn) bassBoostStrength.toShort() else 0)
