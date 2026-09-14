@@ -52,6 +52,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var hpfSwitch: Switch
     private lateinit var agcSwitch: Switch
     private lateinit var limiterSwitch: Switch
+    private lateinit var exciterSwitch: Switch
+    private lateinit var presenceSwitch: Switch
+    private lateinit var turboSlider: SeekBar
+    private lateinit var turboText: TextView
     private lateinit var toggleButton: Button
 
     // ----- Audio state -----
@@ -82,6 +86,9 @@ class MainActivity : AppCompatActivity() {
     @Volatile private var hpfOn = false
     @Volatile private var agcOn = false
     @Volatile private var limiterOn = false
+    @Volatile private var exciterOn = false
+    @Volatile private var presenceOn = false
+    @Volatile private var turboPct = 100
     @Volatile private var eqBandLevels = floatArrayOf(0f, 0f, 0f, 0f, 0f)
 
     private val reverbNames = arrayOf(
@@ -130,6 +137,10 @@ class MainActivity : AppCompatActivity() {
         hpfSwitch = findViewById(R.id.hpfSwitch)
         agcSwitch = findViewById(R.id.agcSwitch)
         limiterSwitch = findViewById(R.id.limiterSwitch)
+        exciterSwitch = findViewById(R.id.exciterSwitch)
+        presenceSwitch = findViewById(R.id.presenceSwitch)
+        turboSlider = findViewById(R.id.turboSlider)
+        turboText = findViewById(R.id.turboText)
         toggleButton = findViewById(R.id.toggleButton)
 
         setupUi()
@@ -274,6 +285,16 @@ class MainActivity : AppCompatActivity() {
         hpfSwitch.setOnCheckedChangeListener { _, isChecked -> hpfOn = isChecked }
         agcSwitch.setOnCheckedChangeListener { _, isChecked -> agcOn = isChecked }
         limiterSwitch.setOnCheckedChangeListener { _, isChecked -> limiterOn = isChecked }
+        exciterSwitch.setOnCheckedChangeListener { _, isChecked -> exciterOn = isChecked }
+        presenceSwitch.setOnCheckedChangeListener { _, isChecked -> presenceOn = isChecked }
+        turboSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                turboPct = progress
+                turboText.text = "🔥 TURBO: ${progress}%"
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
 
         toggleButton.setOnClickListener {
             if (isRunning) stopMic() else startMic()
@@ -290,6 +311,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.presetMegaphone).setOnClickListener { applyPreset(7) }
         findViewById<Button>(R.id.presetBroadcast).setOnClickListener { applyPreset(8) }
         findViewById<Button>(R.id.presetStadium).setOnClickListener { applyPreset(9) }
+        findViewById<Button>(R.id.presetGod).setOnClickListener { applyPreset(10) }
     }
 
 
@@ -485,6 +507,12 @@ class MainActivity : AppCompatActivity() {
         // 1.5 compressor (even out dynamics)
         if (compressorOn) applyCompressor(floatBuf, count)
 
+        // 1.6 presence EQ (+6dB @ 3kHz, cuts through voice rooms)
+        if (presenceOn) applyPresence(floatBuf, count)
+
+        // 1.7 exciter (adds harmonics = perceived loudness + clarity)
+        if (exciterOn) applyExciter(floatBuf, count)
+
         // 2. distortion
         if (distortionOn) applyDistortion(floatBuf, count)
 
@@ -508,6 +536,9 @@ class MainActivity : AppCompatActivity() {
 
         // 9. limiter (max loudness, no clipping)
         if (limiterOn) applyLimiter(floatBuf, count)
+
+        // 10. TURBO drive stage (extra gain + soft saturation = perceived loudness)
+        if (turboPct > 0) applyTurbo(floatBuf, count)
 
         for (i in 0 until count) {
             val v = floatBuf[i] * 32767f
@@ -617,7 +648,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyCompressor(buf: FloatArray, count: Int) {
-        val threshold = 0.3f; val ratio = 4f; val makeup = 1.9f
+        val threshold = 0.3f; val ratio = 4f; val makeup = 2.4f
         for (i in 0 until count) {
             val x = abs(buf[i])
             compEnv = if (x > compEnv) compEnv + (x - compEnv) * 0.35f else compEnv + (x - compEnv) * 0.03f
@@ -628,12 +659,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyAgc(buf: FloatArray, count: Int) {
-        // slow envelope follower, pushes level toward 0.85 peak
+        // slow envelope follower, pushes level HARD toward 0.95 peak
         for (i in 0 until count) {
             val x = abs(buf[i])
             agcEnv = if (x > agcEnv) agcEnv + (x - agcEnv) * 0.02f else agcEnv + (x - agcEnv) * 0.002f
-            var g = 0.85f / (agcEnv + 0.02f)
-            if (g > 25f) g = 25f
+            var g = 0.95f / (agcEnv + 0.02f)
+            if (g > 35f) g = 35f
             if (g < 0.5f) g = 0.5f
             buf[i] *= g
         }
@@ -643,9 +674,53 @@ class MainActivity : AppCompatActivity() {
         for (i in 0 until count) {
             val x = abs(buf[i])
             limEnv = if (x > limEnv) limEnv + (x - limEnv) * 0.5f else limEnv + (x - limEnv) * 0.2f
-            var g = 0.97f / (limEnv + 0.03f)
+            var g = 0.99f / (limEnv + 0.01f)
             if (g > 1f) g = 1f
             buf[i] *= g
+        }
+    }
+
+    private var presenceX1 = 0f
+    private var presenceX2 = 0f
+    private var presenceY1 = 0f
+    private var presenceY2 = 0f
+    private var exciterX1 = 0f
+    private var exciterY1 = 0f
+
+    private fun applyPresence(buf: FloatArray, count: Int) {
+        // 2nd-order bandpass @ 3.2 kHz added on top of dry = +presence, voice cuts through
+        val f0 = 3200f; val Q = 1.2f
+        val w0 = TWO_PI * f0 / 48000f
+        val cosw = cos(w0); val sinw = sin(w0)
+        val alpha = sinw / (2f * Q)
+        val a0 = 1f + alpha
+        val ib0 = alpha / a0; val ib2 = -alpha / a0
+        val ia1 = -2f * cosw / a0; val ia2 = (1f - alpha) / a0
+        for (i in 0 until count) {
+            val x = buf[i]
+            val y = ib0 * x + ib2 * presenceX2 - ia1 * presenceY1 - ia2 * presenceY2
+            presenceX2 = presenceX1; presenceX1 = x
+            presenceY2 = presenceY1; presenceY1 = y
+            buf[i] = x + y * 0.9f
+        }
+    }
+
+    private fun applyExciter(buf: FloatArray, count: Int) {
+        // 1st-order HPF ~3kHz -> tanh harmonics -> blend +18%
+        val a = exp(-TWO_PI * 3000f / 48000f)
+        for (i in 0 until count) {
+            val hp = a * (exciterY1 + buf[i] - exciterX1)
+            exciterX1 = buf[i]
+            exciterY1 = hp
+            buf[i] += tanh(hp * 3f) * 0.18f
+        }
+    }
+
+    private fun applyTurbo(buf: FloatArray, count: Int) {
+        // extra gain 1x-2.5x with soft tanh saturation — louder, still smooth
+        val drive = 1f + turboPct / 100f * 1.5f
+        for (i in 0 until count) {
+            buf[i] = tanh(buf[i] * drive)
         }
     }
 
@@ -774,6 +849,9 @@ class MainActivity : AppCompatActivity() {
                 agcOn = true; agcSwitch.isChecked = true
                 limiterOn = true; limiterSwitch.isChecked = true
                 compressorOn = true; compressorSwitch.isChecked = true
+                presenceOn = true; presenceSwitch.isChecked = true
+                exciterOn = true; exciterSwitch.isChecked = true
+                turboSlider.progress = 100
                 statusText.text = "📢 VOICE ROOM MODE"
             }
             7 -> { // MEGAPHONE
@@ -819,6 +897,25 @@ class MainActivity : AppCompatActivity() {
                 hpfOn = true; hpfSwitch.isChecked = true
                 limiterOn = true; limiterSwitch.isChecked = true
                 statusText.text = "🏟 STADIUM MODE"
+            }
+            10 -> { // GOD MODE: absolute maximum loudness
+                gainSlider.progress = 490; loudnessSlider.progress = 6000
+                distortionOn = false; distortionSwitch.isChecked = false
+                pitchSemi = 0f; pitchSlider.progress = 120
+                ringModOn = false; ringModSwitch.isChecked = false
+                bitcrushOn = false; bitcrusherSwitch.isChecked = false
+                echoOn = false; echoSwitch.isChecked = false
+                flangerOn = false; flangerSwitch.isChecked = false
+                reverbIdx = 0; reverbSpinner.setSelection(0)
+                bassBoostOn = false; bassBoostSwitch.isChecked = false
+                hpfOn = true; hpfSwitch.isChecked = true
+                agcOn = true; agcSwitch.isChecked = true
+                limiterOn = true; limiterSwitch.isChecked = true
+                compressorOn = true; compressorSwitch.isChecked = true
+                presenceOn = true; presenceSwitch.isChecked = true
+                exciterOn = true; exciterSwitch.isChecked = true
+                turboSlider.progress = 100
+                statusText.text = "👁 GOD MODE — MAXIMUM LOUDNESS 👁"
             }
         }
     }
