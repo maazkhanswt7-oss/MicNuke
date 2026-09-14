@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="#0f0f23">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MIC NUKE"
+        android:textSize="52sp"
+        android:textStyle="bold"
+        android:textColor="#ff0040"
+        android:layout_marginBottom="8dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="HOLY MOLY MODE"
+        android:textSize="16sp"
+        android:textColor="#ff4080"
+        android:layout_marginBottom="40dp"/>
+
+    <TextView
+        android:id="@+id/gainText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gain: 8.0x"
+        android:textSize="28sp"
+        android:textColor="#ffffff"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <SeekBar
+        android:id="@+id/gainSlider"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:progressTint="#ff0040"
+        android:thumbTint="#ff0040"
+        android:layout_marginBottom="50dp"/>
+
+    <Button
+        android:id="@+id/toggleButton"
+        android:layout_width="180dp"
+        android:layout_height="70dp"
+        android:text="START"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:backgroundTint="#ff0040"
+        android:textColor="#ffffff"/>
+
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Ready"
+        android:textSize="20sp"
+        android:textColor="#ffffff"
+        android:layout_marginTop="32dp"
+        android:textStyle="bold"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Plug in handsfree → Start → Open WePlay"
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginTop="60dp"
+        android:gravity="center"/>
+
+</LinearLayout>
