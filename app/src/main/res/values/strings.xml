@@ -11,5 +11,5 @@
     <string name="sec_dynamics">💥 DYNAMICS</string>
     <string name="sec_presets">🎭 PRESETS</string>
     <string name="sec_level">📊 LEVEL METER</string>
-    <string name="voiceroom_tip"> HOW TO USE (like PayBack + WePlay): Tap 🔊 PAYBACK preset → START. Your mic is played out the SPEAKER at max volume with echo + doubling, so the room hears it. Then open WePlay / voice room with its mic picking up the speaker — your voice gets boosted + doubled twice. For max room-tremble use 🏚 ROOM SHAKER (feedback ramps up over ~30s). Keep the phone 1-2 ft away to avoid painful squeal.</string>
+    <string name="voiceroom_tip">🔌 RONIN R9 MODE: Keep the handsfree PLUGGED IN. Tap 🔌 HANDSFREE (RONIN R9) → START. Input = headset mic (what you talk into), Output = PHONE SPEAKER at max volume — so your voice is amplified, echoed and doubled out of the phone speaker, the Ronin mic hears it and WePlay doubles it again. Talk normally, keep the phone 1 ft away, speaker facing you. If the room is quiet, check that the phone speaker (not the earbud) is playing.</string>
 </resources>
