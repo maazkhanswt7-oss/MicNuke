@@ -64,6 +64,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var shakerSwitch: Switch
     private lateinit var speakerMaxSwitch: Switch
     private lateinit var srcSpinner: Spinner
+    private lateinit var speakerForceSwitch: Switch
+    private lateinit var micForceSwitch: Switch
+    private lateinit var peakSwitch: Switch
 
     // ----- Audio state -----
     private var micThread: Thread? = null
@@ -103,6 +106,9 @@ class MainActivity : AppCompatActivity() {
     @Volatile private var shakerOn = false        // slow gain ramp -> acoustic feedback builds
     @Volatile private var speakerMaxOn = true     // force media volume to max
     @Volatile private var inputSrcIdx = 0         // 0 = MIC (raw/loudest), 1 = CAMCORDER, 2 = VOICE_COMM
+    @Volatile private var speakerForce = true     // ignore wired/BT headset -> use PHONE speaker
+    @Volatile private var micForce = true         // ignore headset mic -> use PHONE mic
+    @Volatile private var peakSquashOn = true     // waveshape to near-square = max RMS loudness
     private var shakeGain = 1.0f
     @Volatile private var eqBandLevels = floatArrayOf(0f, 0f, 0f, 0f, 0f)
 
@@ -164,6 +170,9 @@ class MainActivity : AppCompatActivity() {
         shakerSwitch = findViewById(R.id.shakerSwitch)
         speakerMaxSwitch = findViewById(R.id.speakerMaxSwitch)
         srcSpinner = findViewById(R.id.srcSpinner)
+        speakerForceSwitch = findViewById(R.id.speakerForceSwitch)
+        micForceSwitch = findViewById(R.id.micForceSwitch)
+        peakSwitch = findViewById(R.id.peakSwitch)
 
         setupUi()
         setupListeners()
@@ -334,6 +343,9 @@ class MainActivity : AppCompatActivity() {
             if (!v) shakeGain = 1.0f
         }
         speakerMaxSwitch.setOnCheckedChangeListener { _, v -> speakerMaxOn = v }
+        speakerForceSwitch.setOnCheckedChangeListener { _, v -> speakerForce = v }
+        micForceSwitch.setOnCheckedChangeListener { _, v -> micForce = v }
+        peakSwitch.setOnCheckedChangeListener { _, v -> peakSquashOn = v }
 
         srcSpinner.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
@@ -362,6 +374,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.presetGod).setOnClickListener { applyPreset(10) }
         findViewById<Button>(R.id.presetPayback).setOnClickListener { applyPreset(11) }
         findViewById<Button>(R.id.presetShaker).setOnClickListener { applyPreset(12) }
+        findViewById<Button>(R.id.presetMax).setOnClickListener { applyPreset(13) }
     }
 
 
@@ -377,14 +390,23 @@ class MainActivity : AppCompatActivity() {
         isRunning = true
 
         // PayBack trick #1: force the media stream (speaker) to MAX volume
-        if (speakerMaxOn) {
-            try {
-                val am = getSystemService(AUDIO_SERVICE) as AudioManager
+        try {
+            val am = getSystemService(AUDIO_SERVICE) as AudioManager
+            if (speakerMaxOn) {
                 am.setStreamVolume(AudioManager.STREAM_MUSIC,
                     am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
-                am.setSpeakerphoneOn(true)
-            } catch (e: Exception) {}
-        }
+            }
+            if (speakerForce) {
+                // kick off any headset route so the PHONE SPEAKER is used
+                try { am.stopBluetoothSco() } catch (e: Exception) {}
+                try {
+                    @Suppress("DEPRECATION") am.isBluetoothScoOn = false
+                } catch (e: Exception) {}
+                try {
+                    @Suppress("DEPRECATION") am.isSpeakerphoneOn = true
+                } catch (e: Exception) {}
+            }
+        } catch (e: Exception) {}
 
         toggleButton.text = getString(R.string.btn_stop)
         toggleButton.setBackgroundResource(R.drawable.btn_stop)
@@ -454,6 +476,22 @@ class MainActivity : AppCompatActivity() {
                 .build()
 
             val session = player.audioSessionId
+
+            // *** THE LOUD FIX *** pin IO to the phone's OWN speaker + mic,
+            // ignoring the wired/BT handsfree which would eat all the volume.
+            try {
+                val am2 = getSystemService(AUDIO_SERVICE) as AudioManager
+                if (speakerForce) {
+                    am2.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+                        .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                        ?.let { player!!.setPreferredDevice(it) }
+                }
+                if (micForce) {
+                    am2.getDevices(AudioManager.GET_DEVICES_INPUTS)
+                        .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
+                        ?.let { recorder!!.setPreferredDevice(it) }
+                }
+            } catch (e: Exception) {}
 
             // Hardware effects attached to output session
             try { le = LoudnessEnhancer(session); le.setTargetGain(loudnessMb); le.enabled = true } catch (e: Exception) {}
@@ -615,6 +653,10 @@ class MainActivity : AppCompatActivity() {
         // 10. TURBO drive stage (extra gain + soft saturation = perceived loudness)
         if (turboPct > 0) applyTurbo(floatBuf, count)
 
+        // 10.5 PEAK SQUASH — waveshape toward a square wave. A square has ~100% RMS
+        // for the same peak, which is the single biggest perceived-loudness jump possible.
+        if (peakSquashOn) applyPeakSquash(floatBuf, count)
+
         // 11. ROOM SHAKER: slow gain ramp so the acoustic loop builds & trembles
         if (shakerOn) {
             shakeGain = (shakeGain + 0.004f).coerceAtMost(12f)
@@ -736,7 +778,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyCompressor(buf: FloatArray, count: Int) {
-        val threshold = 0.3f; val ratio = 4f; val makeup = 2.4f
+        val threshold = 0.3f; val ratio = 4f; val makeup = 2.8f
         for (i in 0 until count) {
             val x = abs(buf[i])
             compEnv = if (x > compEnv) compEnv + (x - compEnv) * 0.35f else compEnv + (x - compEnv) * 0.03f
@@ -751,8 +793,8 @@ class MainActivity : AppCompatActivity() {
         for (i in 0 until count) {
             val x = abs(buf[i])
             agcEnv = if (x > agcEnv) agcEnv + (x - agcEnv) * 0.02f else agcEnv + (x - agcEnv) * 0.002f
-            var g = 0.95f / (agcEnv + 0.02f)
-            if (g > 35f) g = 35f
+            var g = 0.98f / (agcEnv + 0.02f)
+            if (g > 60f) g = 60f
             if (g < 0.5f) g = 0.5f
             buf[i] *= g
         }
@@ -762,7 +804,7 @@ class MainActivity : AppCompatActivity() {
         for (i in 0 until count) {
             val x = abs(buf[i])
             limEnv = if (x > limEnv) limEnv + (x - limEnv) * 0.5f else limEnv + (x - limEnv) * 0.2f
-            var g = 0.99f / (limEnv + 0.01f)
+            var g = 0.999f / (limEnv + 0.001f)
             if (g > 1f) g = 1f
             buf[i] *= g
         }
@@ -809,6 +851,16 @@ class MainActivity : AppCompatActivity() {
         val drive = 1f + turboPct / 100f * 1.5f
         for (i in 0 until count) {
             buf[i] = tanh(buf[i] * drive)
+        }
+    }
+
+    private fun applyPeakSquash(buf: FloatArray, count: Int) {
+        // pre-drive then hard-clip = near-square wave = maximum RMS / perceived loudness
+        val k = 20f
+        for (i in 0 until count) {
+            val x = buf[i] * k
+            val c = if (x > 1f) 1f else if (x < -1f) -1f else x
+            buf[i] = c * 0.99f
         }
     }
 
@@ -1090,6 +1142,32 @@ class MainActivity : AppCompatActivity() {
                 outGainSlider.progress = 400
                 shakerSwitch.isChecked = true
                 statusText.text = "🏚 ROOM SHAKER — MAX FEEDBACK"
+            }
+            13 -> { // MAXIMUM PEAK — everything at the absolute ceiling
+                gainSlider.progress = 490; loudnessSlider.progress = 6000
+                distortionOn = false; distortionSwitch.isChecked = false
+                pitchSemi = 0f; pitchSlider.progress = 120
+                ringModOn = false; ringModSwitch.isChecked = false
+                bitcrushOn = false; bitcrusherSwitch.isChecked = false
+                echoOn = false; echoSwitch.isChecked = false
+                flangerOn = false; flangerSwitch.isChecked = false
+                reverbIdx = 2; reverbSpinner.setSelection(2)
+                bassBoostOn = false; bassBoostSwitch.isChecked = false
+                hpfOn = true; hpfSwitch.isChecked = true
+                agcOn = true; agcSwitch.isChecked = true
+                limiterOn = true; limiterSwitch.isChecked = true
+                compressorOn = true; compressorSwitch.isChecked = true
+                presenceOn = true; presenceSwitch.isChecked = true
+                exciterOn = true; exciterSwitch.isChecked = true
+                peakSwitch.isChecked = true
+                turboSlider.progress = 100
+                paybackSwitch.isChecked = true
+                doubleSwitch.isChecked = true
+                outGainSlider.progress = 400
+                speakerMaxSwitch.isChecked = true
+                speakerForceSwitch.isChecked = true
+                micForceSwitch.isChecked = true
+                statusText.text = "💀 MAXIMUM PEAK — LOUDEST POSSIBLE 💀"
             }
         }
     }
