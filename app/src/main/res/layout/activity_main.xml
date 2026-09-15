@@ -204,6 +204,63 @@
                     android:checked="true" />
             </LinearLayout>
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="⚡ Force PHONE SPEAKER (ignore headset)"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/speakerForceSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="⚡ Force PHONE MIC (ignore headset mic)"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/micForceSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="💀 PEAK SQUASH (max RMS)"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/peakSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true" />
+            </LinearLayout>
+
             <TextView
                 android:id="@+id/outGainText"
                 android:layout_width="wrap_content"
@@ -918,6 +975,22 @@
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_white"
+                    android:background="@drawable/btn_preset" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+                <Button
+                    android:id="@+id/presetMax"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:text="💀 MAXIMUM PEAK — LOUDEST POSSIBLE"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/neon_pink"
                     android:background="@drawable/btn_preset" />
             </LinearLayout>
         </LinearLayout>
