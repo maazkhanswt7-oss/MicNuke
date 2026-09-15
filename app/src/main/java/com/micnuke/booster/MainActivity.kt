@@ -57,6 +57,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var turboSlider: SeekBar
     private lateinit var turboText: TextView
     private lateinit var toggleButton: Button
+    private lateinit var outGainSlider: SeekBar
+    private lateinit var outGainText: TextView
+    private lateinit var paybackSwitch: Switch
+    private lateinit var doubleSwitch: Switch
+    private lateinit var shakerSwitch: Switch
+    private lateinit var speakerMaxSwitch: Switch
+    private lateinit var srcSpinner: Spinner
 
     // ----- Audio state -----
     private var micThread: Thread? = null
@@ -89,6 +96,14 @@ class MainActivity : AppCompatActivity() {
     @Volatile private var exciterOn = false
     @Volatile private var presenceOn = false
     @Volatile private var turboPct = 100
+    // ----- PAYBACK engine state -----
+    @Volatile private var outGainPct = 300        // 100-400 => 1.0x-4.0x hard-clip loudness
+    @Volatile private var paybackEchoOn = true    // PayBack-style live echo tail
+    @Volatile private var doubleOn = false        // voice doubling
+    @Volatile private var shakerOn = false        // slow gain ramp -> acoustic feedback builds
+    @Volatile private var speakerMaxOn = true     // force media volume to max
+    @Volatile private var inputSrcIdx = 0         // 0 = MIC (raw/loudest), 1 = CAMCORDER, 2 = VOICE_COMM
+    private var shakeGain = 1.0f
     @Volatile private var eqBandLevels = floatArrayOf(0f, 0f, 0f, 0f, 0f)
 
     private val reverbNames = arrayOf(
@@ -142,6 +157,13 @@ class MainActivity : AppCompatActivity() {
         turboSlider = findViewById(R.id.turboSlider)
         turboText = findViewById(R.id.turboText)
         toggleButton = findViewById(R.id.toggleButton)
+        outGainSlider = findViewById(R.id.outGainSlider)
+        outGainText = findViewById(R.id.outGainText)
+        paybackSwitch = findViewById(R.id.paybackSwitch)
+        doubleSwitch = findViewById(R.id.doubleSwitch)
+        shakerSwitch = findViewById(R.id.shakerSwitch)
+        speakerMaxSwitch = findViewById(R.id.speakerMaxSwitch)
+        srcSpinner = findViewById(R.id.srcSpinner)
 
         setupUi()
         setupListeners()
@@ -296,6 +318,32 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(sb: SeekBar?) {}
         })
 
+        // ----- PAYBACK engine controls -----
+        outGainSlider.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(sb: SeekBar?, progress: Int, fromUser: Boolean) {
+                outGainPct = progress
+                outGainText.text = "🔊 OUTPUT: ${String.format("%.1f", progress / 100f)}x (hard-clip)"
+            }
+            override fun onStartTrackingTouch(sb: SeekBar?) {}
+            override fun onStopTrackingTouch(sb: SeekBar?) {}
+        })
+        paybackSwitch.setOnCheckedChangeListener { _, v -> paybackEchoOn = v }
+        doubleSwitch.setOnCheckedChangeListener { _, v -> doubleOn = v }
+        shakerSwitch.setOnCheckedChangeListener { _, v ->
+            shakerOn = v
+            if (!v) shakeGain = 1.0f
+        }
+        speakerMaxSwitch.setOnCheckedChangeListener { _, v -> speakerMaxOn = v }
+
+        srcSpinner.adapter = ArrayAdapter(this,
+            android.R.layout.simple_spinner_dropdown_item,
+            arrayOf("🎤 MIC (loudest)", "📹 CAMCORDER", "📞 VOICE_COMM"))
+        srcSpinner.setSelection(inputSrcIdx)
+        srcSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) { inputSrcIdx = pos }
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
+
         toggleButton.setOnClickListener {
             if (isRunning) stopMic() else startMic()
         }
@@ -312,6 +360,8 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.presetBroadcast).setOnClickListener { applyPreset(8) }
         findViewById<Button>(R.id.presetStadium).setOnClickListener { applyPreset(9) }
         findViewById<Button>(R.id.presetGod).setOnClickListener { applyPreset(10) }
+        findViewById<Button>(R.id.presetPayback).setOnClickListener { applyPreset(11) }
+        findViewById<Button>(R.id.presetShaker).setOnClickListener { applyPreset(12) }
     }
 
 
@@ -325,10 +375,22 @@ class MainActivity : AppCompatActivity() {
     private fun startMic() {
         if (isRunning) return
         isRunning = true
+
+        // PayBack trick #1: force the media stream (speaker) to MAX volume
+        if (speakerMaxOn) {
+            try {
+                val am = getSystemService(AUDIO_SERVICE) as AudioManager
+                am.setStreamVolume(AudioManager.STREAM_MUSIC,
+                    am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
+                am.setSpeakerphoneOn(true)
+            } catch (e: Exception) {}
+        }
+
         toggleButton.text = getString(R.string.btn_stop)
         toggleButton.setBackgroundResource(R.drawable.btn_stop)
         statusText.text = getString(R.string.status_active)
         statusText.setTextColor(ContextCompat.getColor(this, R.color.neon_pink))
+        shakeGain = 1.0f
 
         micThread = thread(start = true) { audioLoop() }
     }
@@ -367,7 +429,13 @@ class MainActivity : AppCompatActivity() {
         var ns: NoiseSuppressor? = null
 
         try {
-            recorder = AudioRecord(MediaRecorder.AudioSource.CAMCORDER,
+            // PayBack trick #2: raw MIC source = no AGC squashing your level down
+            val src = when (inputSrcIdx) {
+                1 -> MediaRecorder.AudioSource.CAMCORDER
+                2 -> MediaRecorder.AudioSource.VOICE_COMMUNICATION
+                else -> MediaRecorder.AudioSource.MIC
+            }
+            recorder = AudioRecord(src,
                 sampleRate, AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT, bufSize)
 
@@ -415,6 +483,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {}
 
             recorder.startRecording()
+            player.setVolume(1f)   // PayBack trick #3: output at full scale
             player.play()
 
             val inBuf = ShortArray(bufSize)
@@ -531,6 +600,12 @@ class MainActivity : AppCompatActivity() {
         // 7. echo
         if (echoOn) applyEcho(floatBuf, count)
 
+        // 7.5 PAYBACK echo (2-tap slapback + repeat, PayBack-app style)
+        if (paybackEchoOn) applyPaybackEcho(floatBuf, count)
+
+        // 7.6 voice doubling (detuned short delay = thicker, fuller voice)
+        if (doubleOn) applyDouble(floatBuf, count)
+
         // 8. AGC (auto push voice to target level)
         if (agcOn) applyAgc(floatBuf, count)
 
@@ -539,6 +614,19 @@ class MainActivity : AppCompatActivity() {
 
         // 10. TURBO drive stage (extra gain + soft saturation = perceived loudness)
         if (turboPct > 0) applyTurbo(floatBuf, count)
+
+        // 11. ROOM SHAKER: slow gain ramp so the acoustic loop builds & trembles
+        if (shakerOn) {
+            shakeGain = (shakeGain + 0.004f).coerceAtMost(12f)
+        }
+
+        // 12. PAYBACK OUTPUT: gain then HARD CLIP -> raises RMS = real speaker loudness
+        val og = (outGainPct / 100f) * shakeGain
+        for (i in 0 until count) {
+            var v = floatBuf[i] * og
+            if (v > 1f) v = 1f else if (v < -1f) v = -1f
+            floatBuf[i] = v
+        }
 
         for (i in 0 until count) {
             val v = floatBuf[i] * 32767f
@@ -721,6 +809,43 @@ class MainActivity : AppCompatActivity() {
         val drive = 1f + turboPct / 100f * 1.5f
         for (i in 0 until count) {
             buf[i] = tanh(buf[i] * drive)
+        }
+    }
+
+    // ================= PAYBACK ENGINE =================
+    private val paybackBuf = FloatArray(48000 * 2)   // 2 s of delay line
+    private var paybackWrite = 0
+    private val doubleBuf = FloatArray(48000)
+    private var doubleWrite = 0
+    private var doublePhase = 0f
+
+    private fun applyPaybackEcho(buf: FloatArray, count: Int) {
+        // two taps: 95 ms slapback + 340 ms repeat, high feedback -> regenerating tail
+        val d1 = 4560; val d2 = 16320
+        val fb = 0.82f
+        for (i in 0 until count) {
+            val w = paybackWrite % paybackBuf.size
+            val r1 = ((paybackWrite - d1) % paybackBuf.size + paybackBuf.size) % paybackBuf.size
+            val r2 = ((paybackWrite - d2) % paybackBuf.size + paybackBuf.size) % paybackBuf.size
+            val wet = paybackBuf[r1] * 0.75f + paybackBuf[r2] * 0.6f
+            var out = buf[i] + wet * fb
+            if (out > 4f) out = 4f else if (out < -4f) out = -4f
+            paybackBuf[w] = out
+            paybackWrite++
+            buf[i] = out
+        }
+    }
+
+    private fun applyDouble(buf: FloatArray, count: Int) {
+        // slightly detuned 6-9 ms delay mixed back in = doubled voice
+        for (i in 0 until count) {
+            doubleBuf[doubleWrite % doubleBuf.size] = buf[i]
+            doubleWrite++
+            val mod = 288 + (144 * sin(doublePhase)).toInt()
+            val r = ((doubleWrite - mod) % doubleBuf.size + doubleBuf.size) % doubleBuf.size
+            buf[i] = buf[i] * 0.7f + doubleBuf[r] * 0.65f
+            doublePhase += TWO_PI * 0.35f / 48000f
+            if (doublePhase > TWO_PI) doublePhase -= TWO_PI
         }
     }
 
@@ -915,7 +1040,56 @@ class MainActivity : AppCompatActivity() {
                 presenceOn = true; presenceSwitch.isChecked = true
                 exciterOn = true; exciterSwitch.isChecked = true
                 turboSlider.progress = 100
+                paybackSwitch.isChecked = true
+                doubleSwitch.isChecked = true
+                outGainSlider.progress = 400
                 statusText.text = "👁 GOD MODE — MAXIMUM LOUDNESS 👁"
+            }
+            11 -> { // PAYBACK — replicates the PayBack app: loud + echo + doubled voice
+                gainSlider.progress = 490; loudnessSlider.progress = 6000
+                distortionOn = false; distortionSwitch.isChecked = false
+                pitchSemi = 0f; pitchSlider.progress = 120
+                ringModOn = false; ringModSwitch.isChecked = false
+                bitcrushOn = false; bitcrusherSwitch.isChecked = false
+                echoOn = false; echoSwitch.isChecked = false
+                flangerOn = false; flangerSwitch.isChecked = false
+                reverbIdx = 2; reverbSpinner.setSelection(2)
+                bassBoostOn = false; bassBoostSwitch.isChecked = false
+                hpfOn = true; hpfSwitch.isChecked = true
+                agcOn = true; agcSwitch.isChecked = true
+                limiterOn = true; limiterSwitch.isChecked = true
+                compressorOn = true; compressorSwitch.isChecked = true
+                presenceOn = true; presenceSwitch.isChecked = true
+                exciterOn = true; exciterSwitch.isChecked = true
+                turboSlider.progress = 100
+                paybackSwitch.isChecked = true
+                doubleSwitch.isChecked = true
+                outGainSlider.progress = 400
+                speakerMaxSwitch.isChecked = true
+                statusText.text = "🔊 PAYBACK MODE — LOUD + ECHO + DOUBLE"
+            }
+            12 -> { // ROOM SHAKER — feedback ramps until the room trembles
+                gainSlider.progress = 490; loudnessSlider.progress = 6000
+                distortionOn = false; distortionSwitch.isChecked = false
+                pitchSemi = 0f; pitchSlider.progress = 120
+                ringModOn = false; ringModSwitch.isChecked = false
+                bitcrushOn = false; bitcrusherSwitch.isChecked = false
+                echoOn = false; echoSwitch.isChecked = false
+                flangerOn = false; flangerSwitch.isChecked = false
+                reverbIdx = 3; reverbSpinner.setSelection(3)
+                bassBoostOn = false; bassBoostSwitch.isChecked = false
+                hpfOn = true; hpfSwitch.isChecked = true
+                agcOn = true; agcSwitch.isChecked = true
+                limiterOn = true; limiterSwitch.isChecked = true
+                compressorOn = true; compressorSwitch.isChecked = true
+                presenceOn = true; presenceSwitch.isChecked = true
+                exciterOn = true; exciterSwitch.isChecked = true
+                turboSlider.progress = 100
+                paybackSwitch.isChecked = true
+                doubleSwitch.isChecked = false
+                outGainSlider.progress = 400
+                shakerSwitch.isChecked = true
+                statusText.text = "🏚 ROOM SHAKER — MAX FEEDBACK"
             }
         }
     }
