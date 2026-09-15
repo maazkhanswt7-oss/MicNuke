@@ -64,8 +64,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var shakerSwitch: Switch
     private lateinit var speakerMaxSwitch: Switch
     private lateinit var srcSpinner: Spinner
-    private lateinit var speakerForceSwitch: Switch
-    private lateinit var micForceSwitch: Switch
+    private lateinit var outRouteSpinner: Spinner
+    private lateinit var inRouteSpinner: Spinner
     private lateinit var peakSwitch: Switch
 
     // ----- Audio state -----
@@ -106,8 +106,9 @@ class MainActivity : AppCompatActivity() {
     @Volatile private var shakerOn = false        // slow gain ramp -> acoustic feedback builds
     @Volatile private var speakerMaxOn = true     // force media volume to max
     @Volatile private var inputSrcIdx = 0         // 0 = MIC (raw/loudest), 1 = CAMCORDER, 2 = VOICE_COMM
-    @Volatile private var speakerForce = true     // ignore wired/BT headset -> use PHONE speaker
-    @Volatile private var micForce = true         // ignore headset mic -> use PHONE mic
+    @Volatile private var outRouteIdx = 0         // 0 phone speaker, 1 headset, 2 auto
+    @Volatile private var inRouteIdx = 0          // 0 phone mic, 1 HEADSET mic (Ronin R9), 2 auto
+    @Volatile private var inputBoost = 1f         // extra pre-gain for quiet headset mics
     @Volatile private var peakSquashOn = true     // waveshape to near-square = max RMS loudness
     private var shakeGain = 1.0f
     @Volatile private var eqBandLevels = floatArrayOf(0f, 0f, 0f, 0f, 0f)
@@ -170,8 +171,8 @@ class MainActivity : AppCompatActivity() {
         shakerSwitch = findViewById(R.id.shakerSwitch)
         speakerMaxSwitch = findViewById(R.id.speakerMaxSwitch)
         srcSpinner = findViewById(R.id.srcSpinner)
-        speakerForceSwitch = findViewById(R.id.speakerForceSwitch)
-        micForceSwitch = findViewById(R.id.micForceSwitch)
+        outRouteSpinner = findViewById(R.id.outRouteSpinner)
+        inRouteSpinner = findViewById(R.id.inRouteSpinner)
         peakSwitch = findViewById(R.id.peakSwitch)
 
         setupUi()
@@ -343,9 +344,30 @@ class MainActivity : AppCompatActivity() {
             if (!v) shakeGain = 1.0f
         }
         speakerMaxSwitch.setOnCheckedChangeListener { _, v -> speakerMaxOn = v }
-        speakerForceSwitch.setOnCheckedChangeListener { _, v -> speakerForce = v }
-        micForceSwitch.setOnCheckedChangeListener { _, v -> micForce = v }
         peakSwitch.setOnCheckedChangeListener { _, v -> peakSquashOn = v }
+
+        // ----- ROUTING spinners (works with the Ronin R9 wired handsfree plugged in) -----
+        outRouteSpinner.adapter = ArrayAdapter(this,
+            android.R.layout.simple_spinner_dropdown_item,
+            arrayOf("🔊 PHONE SPEAKER (loud)", "🎧 HEADSET", "AUTO"))
+        outRouteSpinner.setSelection(outRouteIdx)
+        outRouteSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) { outRouteIdx = pos }
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
+
+        inRouteSpinner.adapter = ArrayAdapter(this,
+            android.R.layout.simple_spinner_dropdown_item,
+            arrayOf("🎤 PHONE MIC", "🔌 HEADSET MIC (Ronin R9)", "AUTO"))
+        inRouteSpinner.setSelection(inRouteIdx)
+        inRouteSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(p: AdapterView<*>?, v: View?, pos: Int, id: Long) {
+                inRouteIdx = pos
+                // headset mics are much quieter -> compensate automatically
+                inputBoost = if (pos == 1) 5f else 1f
+            }
+            override fun onNothingSelected(p: AdapterView<*>?) {}
+        }
 
         srcSpinner.adapter = ArrayAdapter(this,
             android.R.layout.simple_spinner_dropdown_item,
@@ -375,6 +397,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.presetPayback).setOnClickListener { applyPreset(11) }
         findViewById<Button>(R.id.presetShaker).setOnClickListener { applyPreset(12) }
         findViewById<Button>(R.id.presetMax).setOnClickListener { applyPreset(13) }
+        findViewById<Button>(R.id.presetHandsfree).setOnClickListener { applyPreset(14) }
     }
 
 
@@ -396,7 +419,7 @@ class MainActivity : AppCompatActivity() {
                 am.setStreamVolume(AudioManager.STREAM_MUSIC,
                     am.getStreamMaxVolume(AudioManager.STREAM_MUSIC), 0)
             }
-            if (speakerForce) {
+            if (outRouteIdx == 0) {
                 // kick off any headset route so the PHONE SPEAKER is used
                 try { am.stopBluetoothSco() } catch (e: Exception) {}
                 try {
@@ -477,18 +500,38 @@ class MainActivity : AppCompatActivity() {
 
             val session = player.audioSessionId
 
-            // *** THE LOUD FIX *** pin IO to the phone's OWN speaker + mic,
-            // ignoring the wired/BT handsfree which would eat all the volume.
+            // *** ROUTING *** choose exactly which speaker + mic to use.
+            // Works with the Ronin R9 plugged in:
+            //   output -> PHONE SPEAKER (loud)   input -> HEADSET MIC (Ronin R9)
             try {
                 val am2 = getSystemService(AUDIO_SERVICE) as AudioManager
-                if (speakerForce) {
+                val outTypes = when (outRouteIdx) {
+                    0 -> intArrayOf(AudioDeviceInfo.TYPE_BUILTIN_SPEAKER)
+                    1 -> intArrayOf(
+                        AudioDeviceInfo.TYPE_WIRED_HEADSET,
+                        AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+                        AudioDeviceInfo.TYPE_USB_HEADSET,
+                        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP)
+                    else -> intArrayOf()
+                }
+                if (outTypes.isNotEmpty()) {
                     am2.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
-                        .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+                        .firstOrNull { outTypes.contains(it.type) }
                         ?.let { player!!.setPreferredDevice(it) }
                 }
-                if (micForce) {
+
+                val inTypes = when (inRouteIdx) {
+                    0 -> intArrayOf(AudioDeviceInfo.TYPE_BUILTIN_MIC)
+                    1 -> intArrayOf(
+                        AudioDeviceInfo.TYPE_WIRED_HEADSET,
+                        AudioDeviceInfo.TYPE_USB_HEADSET,
+                        AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+                        AudioDeviceInfo.TYPE_USB_DEVICE)
+                    else -> intArrayOf()
+                }
+                if (inTypes.isNotEmpty()) {
                     am2.getDevices(AudioManager.GET_DEVICES_INPUTS)
-                        .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_MIC }
+                        .firstOrNull { inTypes.contains(it.type) }
                         ?.let { recorder!!.setPreferredDevice(it) }
                 }
             } catch (e: Exception) {}
@@ -608,8 +651,8 @@ class MainActivity : AppCompatActivity() {
         // 0. high-pass filter (cut rumble, free up headroom)
         if (hpfOn) applyHpf(floatBuf, count)
 
-        // 1. gain
-        if (gain != 1f) applyGain(floatBuf, count)
+        // 1. gain (includes headset-mic boost when talking into the Ronin R9)
+        if (gain != 1f || inputBoost != 1f) applyGain(floatBuf, count)
 
         // 1.5 compressor (even out dynamics)
         if (compressorOn) applyCompressor(floatBuf, count)
@@ -677,7 +720,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyGain(buf: FloatArray, count: Int) {
-        for (i in 0 until count) buf[i] *= gain
+        val g = gain * inputBoost
+        for (i in 0 until count) buf[i] *= g
     }
 
     private fun applyDistortion(buf: FloatArray, count: Int) {
@@ -1165,9 +1209,35 @@ class MainActivity : AppCompatActivity() {
                 doubleSwitch.isChecked = true
                 outGainSlider.progress = 400
                 speakerMaxSwitch.isChecked = true
-                speakerForceSwitch.isChecked = true
-                micForceSwitch.isChecked = true
+                outRouteSpinner.setSelection(0)
+                inRouteSpinner.setSelection(0)
                 statusText.text = "💀 MAXIMUM PEAK — LOUDEST POSSIBLE 💀"
+            }
+            14 -> { // HANDSFREE (Ronin R9) — headset mic IN, phone speaker OUT
+                gainSlider.progress = 490; loudnessSlider.progress = 6000
+                distortionOn = false; distortionSwitch.isChecked = false
+                pitchSemi = 0f; pitchSlider.progress = 120
+                ringModOn = false; ringModSwitch.isChecked = false
+                bitcrushOn = false; bitcrusherSwitch.isChecked = false
+                echoOn = false; echoSwitch.isChecked = false
+                flangerOn = false; flangerSwitch.isChecked = false
+                reverbIdx = 2; reverbSpinner.setSelection(2)
+                bassBoostOn = false; bassBoostSwitch.isChecked = false
+                hpfOn = true; hpfSwitch.isChecked = true
+                agcOn = true; agcSwitch.isChecked = true
+                limiterOn = true; limiterSwitch.isChecked = true
+                compressorOn = true; compressorSwitch.isChecked = true
+                presenceOn = true; presenceSwitch.isChecked = true
+                exciterOn = true; exciterSwitch.isChecked = true
+                peakSwitch.isChecked = true
+                turboSlider.progress = 100
+                paybackSwitch.isChecked = true
+                doubleSwitch.isChecked = true
+                outGainSlider.progress = 400
+                speakerMaxSwitch.isChecked = true
+                outRouteSpinner.setSelection(0)   // blasts the PHONE SPEAKER
+                inRouteSpinner.setSelection(1)    // listens to the HEADSET MIC (Ronin R9)
+                statusText.text = "🔌 HANDSFREE (RONIN R9) — HEADSET MIC → SPEAKER 💥"
             }
         }
     }
