@@ -204,43 +204,29 @@
                     android:checked="true" />
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="⚡ Force PHONE SPEAKER (ignore headset)"
-                    android:textColor="@color/text_white"
-                    android:textSize="16sp" />
-                <Switch
-                    android:id="@+id/speakerForceSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true" />
-            </LinearLayout>
+                android:text="🔊 OUTPUT ROUTE"
+                android:textColor="@color/text_white"
+                android:textSize="16sp"
+                android:layout_marginTop="6dp" />
+            <Spinner
+                android:id="@+id/outRouteSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="⚡ Force PHONE MIC (ignore headset mic)"
-                    android:textColor="@color/text_white"
-                    android:textSize="16sp" />
-                <Switch
-                    android:id="@+id/micForceSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true" />
-            </LinearLayout>
+                android:text="🎤 INPUT ROUTE (mic to amplify)"
+                android:textColor="@color/text_white"
+                android:textSize="16sp"
+                android:layout_marginTop="6dp" />
+            <Spinner
+                android:id="@+id/inRouteSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -991,6 +977,22 @@
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/neon_pink"
+                    android:background="@drawable/btn_preset" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+                <Button
+                    android:id="@+id/presetHandsfree"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:text="🔌 HANDSFREE (RONIN R9) — LOUD"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/neon_cyan"
                     android:background="@drawable/btn_preset" />
             </LinearLayout>
         </LinearLayout>
