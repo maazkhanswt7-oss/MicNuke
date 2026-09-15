@@ -101,6 +101,130 @@
                 android:lineSpacingExtra="3dp" />
         </LinearLayout>
 
+        <!-- PAYBACK ENGINE CARD -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@drawable/card_bg"
+            android:padding="16dp"
+            android:layout_marginBottom="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔊 PAYBACK ENGINE (live speaker loop)"
+                android:textColor="@color/section_title"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Input Source"
+                android:textColor="@color/text_white"
+                android:textSize="16sp" />
+            <Spinner
+                android:id="@+id/srcSpinner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="PayBack Echo (95+340ms)"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/paybackSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Voice Double"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/doubleSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🏚 Room Shaker (feedback ramp)"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/shakerSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Force Speaker to MAX volume"
+                    android:textColor="@color/text_white"
+                    android:textSize="16sp" />
+                <Switch
+                    android:id="@+id/speakerMaxSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:checked="true" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/outGainText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔊 OUTPUT: 3.0x (hard-clip)"
+                android:textColor="@color/neon_yellow"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginTop="10dp" />
+
+            <SeekBar
+                android:id="@+id/outGainSlider"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="400"
+                android:progress="300"
+                android:progressDrawable="@drawable/slider_track"
+                android:thumb="@drawable/slider_thumb" />
+        </LinearLayout>
+
+
         <!-- MASTER CARD -->
         <LinearLayout
             android:layout_width="match_parent"
@@ -766,6 +890,34 @@
                     android:textSize="14sp"
                     android:textStyle="bold"
                     android:textColor="@color/neon_yellow"
+                    android:background="@drawable/btn_preset" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+                <Button
+                    android:id="@+id/presetPayback"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginEnd="6dp"
+                    android:text="🔊 PAYBACK"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/neon_yellow"
+                    android:background="@drawable/btn_preset" />
+                <Button
+                    android:id="@+id/presetShaker"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🏚 ROOM SHAKER"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_white"
                     android:background="@drawable/btn_preset" />
             </LinearLayout>
         </LinearLayout>
