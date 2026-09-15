@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- glow ring -->
+    <path
+        android:pathData="M54,26 m-22,0 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0"
+        android:strokeColor="#00f5d4"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.35" />
+
+    <!-- microphone body -->
+    <path
+        android:pathData="M54,32 a9,9 0 0,1 9,9 v12 a9,9 0 0,1 -18,0 v-12 a9,9 0 0,1 9,-9 z"
+        android:fillColor="#00f5d4" />
+
+    <!-- mic arc (holder) -->
+    <path
+        android:pathData="M38,50 a16,16 0 0,0 32,0"
+        android:strokeColor="#00f5d4"
+        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:strokeLineCap="round" />
+
+    <!-- stem -->
+    <path
+        android:pathData="M54,66 v8"
+        android:strokeColor="#00f5d4"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+
+    <!-- lightning bolt across the mic = NUKE -->
+    <path
+        android:pathData="M58,34 L46,54 h7 l-4,16 13,-22 h-7 z"
+        android:fillColor="#fee440" />
+
+    <!-- bass/impact bars -->
+    <path
+        android:pathData="M30,76 h6 v4 h-6 z M40,72 h6 v8 h-6 z M50,68 h6 v12 h-6 z M60,72 h6 v8 h-6 z M70,76 h6 v4 h-6 z"
+        android:fillColor="#ff006e"
+        android:strokeAlpha="0.9" />
+</vector>
